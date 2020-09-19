@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,7 +10,21 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type Pair struct {
+	DeviceID int64
+	UserID   int64
+}
+
 func PairDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	var p Pair
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	defer r.Body.Close()
+	fmt.Printf("pair: %#v", p)
 	w.Write([]byte(`{"status":"active"}`))
 }
 
