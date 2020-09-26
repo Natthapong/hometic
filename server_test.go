@@ -22,9 +22,14 @@ func TestCreatePairDevice(t *testing.T) {
 
 	//handler := PairDeviceHandler(mockPairDevice{})
 
-	handler := PairDeviceHandler(CreatePairDeviceFunc(func(p Pair) error {
+	// handler := PairDeviceHandler(CreatePairDeviceFunc(func(p Pair) error {
+	// 	return nil
+	// }))
+
+	create := func(p Pair) error {
 		return nil
-	}))
+	}
+	handler := PairDeviceHandler(CreatePairDeviceFunc(create))
 
 	handler.ServeHTTP(rec, req)
 
