@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,8 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.Use()
+
 	r.Handle("/pair-device", PairDeviceHandler(NewCreatePairDevice(db))).Methods(http.MethodPost)
 
 	addr := fmt.Sprintf("0.0.0.0:%s", os.Getenv("PORT"))
@@ -38,6 +41,16 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
+func LoggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := zap.NewExample()
+		l = l.With(zap.Namespace("hometic"), zap.String("I'm", "gopher"))
+
+		c := context.WithValue(r.Context(), "logger", l)
+		next.ServeHTTP(w, r.WithContext(c))
+	})
+}
+
 type Pair struct {
 	DeviceID int64
 	UserID   int64
@@ -45,10 +58,11 @@ type Pair struct {
 
 func PairDeviceHandler(device Device) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := zap.NewExample()
-		l = l.With(zap.Namespace("hometic"), zap.String("I'm", "gopher"))
-		l.Info("pair-device")
-
+		loggerCtx := r.Context().Value("logger")
+		log, ok := loggerCtx.(*zap.Logger)
+		if ok {
+			log.Info("pair-device")
+		}
 		var p Pair
 		err := json.NewDecoder(r.Body).Decode(&p)
 		if err != nil {
