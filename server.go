@@ -48,10 +48,11 @@ type Pair struct {
 func PairDeviceHandler(device Device) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.L(r.Context()).Info("pair-device")
-		
+
 		var p Pair
 		err := json.NewDecoder(r.Body).Decode(&p)
 		if err != nil {
+			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(err.Error())
 			return
@@ -61,11 +62,13 @@ func PairDeviceHandler(device Device) http.HandlerFunc {
 
 		err = device.Pair(p)
 		if err != nil {
+			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(err.Error())
 			return
 		}
 
+		w.Header().Set("content-type", "application/json")
 		w.Write([]byte(`{"status":"active"}`))
 	}
 }
