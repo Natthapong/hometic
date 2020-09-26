@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-
 	_ "github.com/lib/pq"
 
 	"github.com/Natthapong/hometic/logger"
@@ -19,6 +18,7 @@ type CustomResponseWriter interface {
 	JSON(statusCode int, data interface{})
 }
 
+//embedded variable
 type JSONResponseWriter struct {
 	http.ResponseWriter
 }
@@ -29,7 +29,7 @@ func (w *JSONResponseWriter) JSON(statusCode int, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
-func main() {
+func run() error {
 	fmt.Println("hello hometic : I'm Gopher!!")
 
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
@@ -51,7 +51,13 @@ func main() {
 	}
 
 	log.Println("starting...")
-	log.Fatal(server.ListenAndServe())
+	return server.ListenAndServe()
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatal("can't start application", err)
+	}
 }
 
 type Pair struct {
@@ -92,7 +98,11 @@ func (fn CreatePairDeviceFunc) Pair(p Pair) error {
 	return fn(p)
 }
 
-func NewCreatePairDevice(db *sql.DB) CreatePairDeviceFunc {
+type DB interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
+func NewCreatePairDevice(db DB) CreatePairDeviceFunc {
 	return func(p Pair) error {
 		_, err := db.Exec("INSERT INTO pairs VALUES ($1,$2);", p.DeviceID, p.UserID)
 		return err
@@ -100,6 +110,7 @@ func NewCreatePairDevice(db *sql.DB) CreatePairDeviceFunc {
 	}
 }
 
+//adapter pattern
 type CustomHandlerFunc func(CustomResponseWriter, *http.Request)
 
 func (handler CustomHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
