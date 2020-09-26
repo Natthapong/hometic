@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,7 +30,7 @@ func TestCreatePairDevice(t *testing.T) {
 	create := func(p Pair) error {
 		return nil
 	}
-	handler := PairDeviceHandler(CreatePairDeviceFunc(create))
+	handler := CustomHandlerFunc(PairDeviceHandler(CreatePairDeviceFunc(create)))
 
 	handler.ServeHTTP(rec, req)
 
@@ -37,7 +38,7 @@ func TestCreatePairDevice(t *testing.T) {
 		t.Error("expect 200 OK but got", rec.Code)
 	}
 
-	expected := `{"status":"active"}`
+	expected := fmt.Sprintf("%s\n", `{"status":"active"}`)
 	if rec.Body.String() != expected {
 		t.Errorf("expected %q but got %q\n", expected, rec.Body.String())
 	}
